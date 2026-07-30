@@ -15,7 +15,7 @@ no email, no extra accounts.
 from datetime import datetime
 from pathlib import Path
 
-DOCS_DIR = Path(__file__).parent / "docs"
+DOCS_DIR = Path.cwd() / "docs"
 ARCHIVE_DIR = DOCS_DIR / "archive"
 
 ARCHIVE_INDEX_TEMPLATE = """<!DOCTYPE html>
