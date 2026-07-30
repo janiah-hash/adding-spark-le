@@ -21,7 +21,7 @@ def _format_story_date(published):
 
 def render_newsletter(stories_by_vertical, enrichment, issue_number=1):
     template_path = Path(__file__).parent / "template.html"
-    template = Template(template_path.read_text())
+    template = Template(template_path.read_text(), autoescape=True)
 
     verticals = {}
     for vkey, vconf in config.VERTICALS.items():
