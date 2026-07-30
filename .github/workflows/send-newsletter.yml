@@ -2,15 +2,11 @@ name: Publish Adding Spark-le Newsletter
 
 on:
   schedule:
-    # 11:00 UTC = 7:00 AM Eastern (Standard Time) / 6:00 AM Central.
-    # Cron doesn't auto-shift for Daylight Saving Time — nudge the hour
-    # twice a year if you want it locked to local clock time.
-    # 1-5 = Monday-Friday only.
     - cron: "0 11 * * 1-5"
-  workflow_dispatch: {}  # lets you trigger a manual test run from the Actions tab
+  workflow_dispatch: {}
 
 permissions:
-  contents: write  # needed so the workflow can commit the generated page back to the repo
+  contents: write
 
 jobs:
   publish-newsletter:
@@ -25,13 +21,13 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r adding-spark-le/requirements.txt
 
       - name: Generate today's newsletter
         env:
           NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python main.py
+        run: python adding-spark-le/main.py
 
       - name: Commit and push the updated page
         run: |
