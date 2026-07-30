@@ -7,7 +7,9 @@ Then filters to the lookback window, dedupes, scores by keyword relevance,
 and returns the top N per vertical.
 """
 
+import html
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -15,6 +17,20 @@ import feedparser
 import requests
 
 import config
+
+
+def _strip_html(text):
+    """Remove any HTML tags (e.g. embedded <img>, <a>, <div> from RSS
+    descriptions) and decode HTML entities, leaving plain text only.
+    This prevents raw markup — most commonly lead-image <img> tags some
+    feeds embed directly in their summary/description field — from
+    rendering unstyled and oversized inside the newsletter."""
+    if not text:
+        return text
+    text = re.sub(r"<[^>]+>", " ", text)  # strip tags
+    text = html.unescape(text)  # decode &amp; etc.
+    text = re.sub(r"\s+", " ", text).strip()  # collapse whitespace
+    return text
 
 
 def _parse_entry_date(entry):
@@ -42,11 +58,11 @@ def _fetch_rss(feed_url, cutoff):
         if pub_date and pub_date < cutoff:
             continue  # too old
         items.append({
-            "title": entry.get("title", "").strip(),
+            "title": _strip_html(entry.get("title", "").strip()),
             "link": entry.get("link", "").strip(),
             "source": source_name,
             "published": pub_date,
-            "summary": entry.get("summary", "").strip(),
+            "summary": _strip_html(entry.get("summary", "").strip()),
         })
     return items
 
@@ -85,11 +101,11 @@ def _fetch_newsapi(keywords, cutoff, api_key):
             except ValueError:
                 pass
         items.append({
-            "title": (article.get("title") or "").strip(),
+            "title": _strip_html((article.get("title") or "").strip()),
             "link": (article.get("url") or "").strip(),
             "source": (article.get("source") or {}).get("name", "Unknown"),
             "published": pub_date,
-            "summary": (article.get("description") or "").strip(),
+            "summary": _strip_html((article.get("description") or "").strip()),
         })
     return items
 
