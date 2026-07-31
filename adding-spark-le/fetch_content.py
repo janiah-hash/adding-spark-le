@@ -148,21 +148,32 @@ def fetch_all_verticals(newsapi_key=None):
 
     for vkey, vconf in config.VERTICALS.items():
         print(f"Fetching: {vconf['label']}...")
-        items = []
 
+        rss_items = []
         for feed_url in vconf.get("feeds", []):
-            items.extend(_fetch_rss(feed_url, cutoff))
+            rss_items.extend(_fetch_rss(feed_url, cutoff))
+        for item in rss_items:
+            item["origin"] = "rss"
 
-        items.extend(_fetch_newsapi(vconf["keywords"], cutoff, newsapi_key))
+        newsapi_items = _fetch_newsapi(vconf["keywords"], cutoff, newsapi_key)
+        for item in newsapi_items:
+            item["origin"] = "newsapi"
 
-        items = _dedupe(items)
+        print(f"  raw: {len(rss_items)} from RSS, {len(newsapi_items)} from NewsAPI")
+
+        items = _dedupe(rss_items + newsapi_items)
 
         for item in items:
             item["score"] = _score(item, vconf["keywords"])
 
-        # Keep only items with at least one keyword hit (avoid irrelevant noise
-        # from broad RSS feeds like a full Utility Dive firehose)
-        items = [i for i in items if i["score"] > 0]
+        # RSS feeds are broad/unfiltered (e.g. a whole outlet's firehose), so
+        # require a keyword hit there to avoid irrelevant noise. NewsAPI
+        # results were already found via a relevancy search against these
+        # same keywords, so we trust that match rather than re-applying a
+        # strict exact-phrase filter that can wrongly discard good hits
+        # (e.g. NewsAPI matching "AI data centers" when our keyword phrase
+        # is "modular data center").
+        items = [i for i in items if i["origin"] == "newsapi" or i["score"] > 0]
         items.sort(key=lambda i: i["score"], reverse=True)
 
         results[vkey] = items[: config.MAX_STORIES_PER_VERTICAL]
